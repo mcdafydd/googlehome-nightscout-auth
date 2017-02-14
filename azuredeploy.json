@@ -1,0 +1,117 @@
+  {
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "siteName": {
+        "type": "string"
+      },
+      "hostingPlanName": {
+        "type": "string"
+      },
+      "siteLocation": {
+        "type": "string"
+      },
+      "sku": {
+        "type": "string",
+        "allowedValues": [
+          "Free",
+          "Shared",
+          "Basic",
+          "Standard"
+        ],
+        "defaultValue": "Free"
+      },
+      "workerSize": {
+        "type": "string",
+        "allowedValues": [
+          "0",
+          "1",
+          "2"
+        ],
+        "defaultValue": "0"
+      },
+      "repoUrl": {
+        "type": "string"
+
+      },
+      "branch": {
+        "type": "string"
+      },
+      "apiSecret": {
+        "type": "string",
+        "minLength": "12",
+        "defaultValue": "Enter an API secret. Must be at least 12 characters"
+      },
+      "apiAiClientToken": {
+        "type": "string",
+        "minLength": "12",
+        "defaultValue": "Enter an API.AI client token.  This should be the client token specified on the API.AI agent you've setup to process language requests from this application."
+      },
+      "oauthClientId": {
+        "type": "string",
+        "defaultValue": "Enter your OAuth2 client ID"
+      },
+      "sessionSecret": {
+        "type": "string",
+        "minLength": "12",
+        "defaultValue": "Enter session secret, used to encrypt cookie"
+      }
+    },
+    "resources": [{
+      "apiVersion": "2015-04-01",
+      "name": "[parameters('hostingPlanName')]",
+      "type": "Microsoft.Web/serverFarms",
+      "location": "[parameters('siteLocation')]",
+      "properties": {
+        "sku": "[parameters('sku')]",
+        "workerSize": "[parameters('workerSize')]",
+        "numberOfWorkers": 1
+      }
+    }, {
+      "apiVersion": "2015-08-01",
+      "name": "[parameters('siteName')]",
+      "type": "Microsoft.Web/Sites",
+      "location": "[parameters('siteLocation')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', parameters('hostingPlanName'))]"
+      ],
+      "tags": {
+        "[concat('hidden-related:', resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', parameters('hostingPlanName'))]": "empty"
+      },
+      "properties": {
+        "serverFarmId": "[parameters('hostingPlanName')]",
+        "siteConfig": {
+          "appSettings": [{
+              "name": "API_SECRET",
+              "value": "[parameters('apiSecret')]"
+            },
+            {
+              "name": "APIAI_CLIENT_TOKEN",
+              "value": "[parameters('apiAiClientToken')]"
+            },
+            {
+              "name": "OAUTH_CLIENT_ID",
+              "value": "[parameters('oauthClientId')]"
+            },
+            {
+              "name": "SESSION_SECRET",
+              "value": "[parameters('sessionSecret')]"
+            }
+          ]
+        }
+      },
+      "resources": [{
+        "apiVersion": "2015-08-01",
+        "name": "web",
+        "type": "sourcecontrols",
+        "dependsOn": [
+          "[resourceId('Microsoft.Web/Sites', parameters('siteName'))]"
+        ],
+        "properties": {
+          "RepoUrl": "[parameters('repoUrl')]",
+          "branch": "[parameters('branch')]",
+          "IsManualIntegration": true
+        }
+      }]
+    }]
+  }

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Login to Nightscout Googlehome interface</title>
+    <meta charset='utf-8' />
+    <meta name="google-signin-scope" content="profile email">
+    <meta name="google-signin-client_id" content="870435360441-23n8q0gjraktji8n2o59t0f74fftf8u4.apps.googleusercontent.com">
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+  </head>
+  <body>
+    <div class="g-signin2" data-onsuccess="onSignIn" data-theme="dark"></div>
+    <p>Signed in as: <div id="userName"></div></p>
+    <p><a href="#" onclick="signOut();">Sign out</a></p>
+    <p><a href="/private/user">Update your Nightscout URL</a></p>
+    <p><a href="#" onclick="deleteUser();">Delete user account and revoke access</a></p>
+    <script>
+      function onSignIn(googleUser) {
+        // Useful data for your client-side scripts:
+        var profile = googleUser.getBasicProfile();
+        console.log("ID: " + profile.getId()); // Don't send this directly to your server!
+        console.log("Email: " + profile.getEmail());
+
+        // The ID token you need to pass to your backend:
+        var id_token = googleUser.getAuthResponse().id_token;
+        console.log("ID Token: " + id_token);
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '/login');
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.onload = function() {
+          if (this.responseText === 'oauthUser') {
+            let meta = document.createElement('meta');
+            meta.httpEquiv = 'refresh';
+            meta.content = '0; url="/oauth/acceptScope"';
+            document.getElementsByTagName('head')[0].appendChild(meta);
+          }
+          else {
+            if (isValidEmail(this.responseText)) {
+              let text = document.createTextNode(this.responseText);
+              document.getElementById('userName').appendChild(text);
+              console.log('Signed in as: ' + this.responseText);
+            }
+          }
+        };
+        xhr.send('idtoken=' + id_token);
+      };
+      function signOut() {
+        var auth2 = gapi.auth2.getAuthInstance();
+        auth2.signOut().then(function () {
+          console.log('User signed out.');
+        });
+      };
+      function deleteUser() {
+        var auth2 = gapi.auth2.getAuthInstance();
+        auth2.disconnect().then(function () {
+          console.log('Access revoked.');
+        })
+        var xhr = new XMLHttpRequest();
+        xhr.open('DELETE', '/user');
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.onload = function() {
+          console.log('Deleted user account and data. Response text: ' + xhr.responseText);
+        };
+        xhr.send(null);
+      };
+      function isValidEmail(emailAddress) {
+        var pattern = new RegExp(/^(("[\w-\s]+")|([\w-]+(?:\.[\w-]+)*)|("[\w-\s]+")([\w-]+(?:\.[\w-]+)*))(@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$)|(@\[?((25[0-5]\.|2[0-4][0-9]\.|1[0-9]{2}\.|[0-9]{1,2}\.))((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})\.){2}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})\]?$)/i);
+        return pattern.test(emailAddress);
+      };
+    </script>
+  </body>
+</html>
