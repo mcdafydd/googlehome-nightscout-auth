@@ -11,7 +11,7 @@ const validUrl = require('valid-url');
 const path = require('path');
 const Promise = require('bluebird');
 
-let mongouri = 'mongodb://localhost/test';
+let mongouri = process.env('MONGODB_URI');
 
 // See http://mongoosejs.com/docs/promises.html
 mongoose.Promise = Promise;

@@ -2,6 +2,10 @@
     "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
+      "databaseAccountName": {
+        "type": "string",
+        "defaultValue": "sumpin2"
+      },
       "siteName": {
         "type": "string"
       },
@@ -32,7 +36,6 @@
       },
       "repoUrl": {
         "type": "string"
-
       },
       "branch": {
         "type": "string"
@@ -57,61 +60,93 @@
         "defaultValue": "Enter session secret, used to encrypt cookie"
       }
     },
-    "resources": [{
-      "apiVersion": "2015-04-01",
-      "name": "[parameters('hostingPlanName')]",
-      "type": "Microsoft.Web/serverFarms",
-      "location": "[parameters('siteLocation')]",
-      "properties": {
-        "sku": "[parameters('sku')]",
-        "workerSize": "[parameters('workerSize')]",
-        "numberOfWorkers": 1
-      }
-    }, {
-      "apiVersion": "2015-08-01",
-      "name": "[parameters('siteName')]",
-      "type": "Microsoft.Web/Sites",
-      "location": "[parameters('siteLocation')]",
-      "dependsOn": [
-        "[resourceId('Microsoft.Web/serverfarms', parameters('hostingPlanName'))]"
-      ],
-      "tags": {
-        "[concat('hidden-related:', resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', parameters('hostingPlanName'))]": "empty"
-      },
-      "properties": {
-        "serverFarmId": "[parameters('hostingPlanName')]",
-        "siteConfig": {
-          "appSettings": [{
-              "name": "API_SECRET",
-              "value": "[parameters('apiSecret')]"
-            },
-            {
-              "name": "APIAI_CLIENT_TOKEN",
-              "value": "[parameters('apiAiClientToken')]"
-            },
-            {
-              "name": "OAUTH_CLIENT_ID",
-              "value": "[parameters('oauthClientId')]"
-            },
-            {
-              "name": "SESSION_SECRET",
-              "value": "[parameters('sessionSecret')]"
-            }
-          ]
-        }
-      },
-      "resources": [{
-        "apiVersion": "2015-08-01",
-        "name": "web",
-        "type": "sourcecontrols",
-        "dependsOn": [
-          "[resourceId('Microsoft.Web/Sites', parameters('siteName'))]"
-        ],
+    "variables": {
+      "databaseAccountTier": "Standard"
+    },
+    "resources": [
+      {
+        "apiVersion": "2015-04-08",
+        "type": "Microsoft.DocumentDB/databaseAccounts",
+        "kind": "MongoDB",
+        "name": "[parameters('databaseAccountName')]",
+        "location": "[resourceGroup().location]",
         "properties": {
-          "RepoUrl": "[parameters('repoUrl')]",
-          "branch": "[parameters('branch')]",
-          "IsManualIntegration": true
+          "name": "[parameters('databaseAccountName')]",
+          "databaseAccountOfferType": "[variables('databaseAccountTier')]"
         }
-      }]
-    }]
+      },
+      {
+        "apiVersion": "2015-04-01",
+        "name": "[parameters('hostingPlanName')]",
+        "type": "Microsoft.Web/serverFarms",
+        "location": "[parameters('siteLocation')]",
+        "properties": {
+          "sku": "[parameters('sku')]",
+          "workerSize": "[parameters('workerSize')]",
+          "numberOfWorkers": 1
+        }
+      },
+      {
+        "apiVersion": "2015-08-01",
+        "name": "[parameters('siteName')]",
+        "type": "Microsoft.Web/Sites",
+        "location": "[parameters('siteLocation')]",
+        "dependsOn": [
+          "[resourceId('Microsoft.Web/serverfarms', parameters('hostingPlanName'))]"
+        ],
+        "tags": {
+          "[concat('hidden-related:', resourceGroup().id, '/providers/Microsoft.Web/serverfarms/', parameters('hostingPlanName'))]": "empty"
+        },
+        "properties": {
+          "serverFarmId": "[parameters('hostingPlanName')]",
+          "siteConfig": {
+            "appSettings": [
+              {
+                "name": "API_SECRET",
+                "value": "[parameters('apiSecret')]"
+              },
+              {
+                "name": "APIAI_CLIENT_TOKEN",
+                "value": "[parameters('apiAiClientToken')]"
+              },
+              {
+                "name": "OAUTH_CLIENT_ID",
+                "value": "[parameters('oauthClientId')]"
+              },
+              {
+                "name": "SESSION_SECRET",
+                "value": "[parameters('sessionSecret')]"
+              },
+              {
+                "Name": "MONGODB_URI",
+                "Value": "[concat(reference(concat('Microsoft.DocumentDb/databaseAccounts/', parameters('databaseAccountName'))).documentEndpoint,'/webapp')]"
+              },
+              {
+                "Name": "DOCUMENTDB_ENDPOINT",
+                "Value": "[reference(concat('Microsoft.DocumentDb/databaseAccounts/', parameters('databaseAccountName'))).documentEndpoint]"
+              },
+              {
+                "Name": "DOCUMENTDB_PRIMARY_KEY",
+                "Value": "[listKeys(resourceId('Microsoft.DocumentDb/databaseAccounts', parameters('databaseAccountName')), '2015-04-08').primaryMasterKey]"
+              }
+            ]
+          }
+        },
+        "resources": [
+          {
+            "apiVersion": "2015-08-01",
+            "name": "web",
+            "type": "sourcecontrols",
+            "dependsOn": [
+              "[resourceId('Microsoft.Web/Sites', parameters('siteName'))]"
+            ],
+            "properties": {
+              "RepoUrl": "[parameters('repoUrl')]",
+              "branch": "[parameters('branch')]",
+              "IsManualIntegration": true
+            }
+          }
+        ]
+      }
+    ]
   }

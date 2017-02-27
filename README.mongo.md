@@ -2,6 +2,8 @@
 
 You will need to initialize a Mongoose connection to a mongo db beforehand.
 
+If deploying to Azure, ensure the MONGODB_URI app setting is correct.
+
 For example :
 
 ```js
