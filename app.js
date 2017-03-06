@@ -11,12 +11,12 @@ const validUrl = require('valid-url');
 const path = require('path');
 const Promise = require('bluebird');
 
-let mongouri = process.env('MONGODB_URI');
+let mongouri = process.env.MONGODB_URI;
 
 // See http://mongoosejs.com/docs/promises.html
 mongoose.Promise = Promise;
 
-process.env.DEBUG = 'actions-on-google:*';
+process.env['DEBUG'] = 'actions-on-google:*';
 
 // Makes connection asynchronously. Mongoose will queue up database
 // operations and release them when the connection is complete.
@@ -54,7 +54,7 @@ app.oauth = new OAuthServer({
 });
 
 app.use(session({
-  secret: process.env('SESSION_SECRET'),
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: true,
   cookie: { 
@@ -329,10 +329,10 @@ function authnUser(req, res, next) {
   // Verify Google ID token
   let auth = new GoogleAuth;
   let idtoken = req.body.idtoken;
-  let client = new auth.OAuth2(process.env('OAUTH_CLIENT_ID'), '', '');
+  let client = new auth.OAuth2(process.env.OAUTH_CLIENT_ID, '', '');
   client.verifyIdToken(
     idtoken,
-    process.env('OAUTH_CLIENT_ID'),
+    process.env.OAUTH_CLIENT_ID,
     // Or, if multiple clients access the backend:
     //[CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3],
     function(err, login) {
