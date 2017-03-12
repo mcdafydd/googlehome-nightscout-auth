@@ -11,6 +11,14 @@ User authentication via Google Identity is the only supported mechanism.  Since 
 
 To deploy the Azure ARM template, use the NodeJS or new Python Azure CLI or Powershell to deploy the template to a resource group you've already created in your Azure subscription.
 
+# Seed Client Data to MongoDB
+
+Before using the application, you must connect to the database and write the OAuth2 client data.  You can use the seed-client.js script to do this.
+
+Login to the Azure portal and find the connection string for your DocumentDB instance.  Set the environment variable MONGODB_URI to this value.
+
+Run `node seed-client.js` to write the client information to the database.
+
 # References
 
 * https://developers.google.com/actions/develop/sdk/
