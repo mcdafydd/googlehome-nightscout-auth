@@ -4,7 +4,7 @@
     "parameters": {
       "databaseAccountName": {
         "type": "string",
-        "defaultValue": "sumpin2"
+        "defaultValue": "sumpin"
       },
       "siteName": {
         "type": "string"
@@ -58,6 +58,10 @@
         "type": "string",
         "minLength": "12",
         "defaultValue": "Enter session secret, used to encrypt cookie"
+      },
+      "nodeVersion": {
+        "type": "string",
+        "defaultValue": "6.9.4"
       }
     },
     "variables": {
@@ -128,6 +132,10 @@
               {
                 "Name": "DOCUMENTDB_PRIMARY_KEY",
                 "Value": "[listKeys(resourceId('Microsoft.DocumentDb/databaseAccounts', parameters('databaseAccountName')), '2015-04-08').primaryMasterKey]"
+              },
+              {
+                "Name": "WEBSITE_NODE_DEFAULT_VERSION",
+                "Value": "[parameters('nodeVersion')]"
               }
             ]
           }
