@@ -1,0 +1,45 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "siteName": {
+      "value": ""
+    },
+    "hostingPlanName": {
+      "value": ""
+    },
+    "siteLocation": {
+      "value": "westus"
+    },
+    "sku": {
+      "value": "Free"
+    },
+    "workerSize": {
+      "value": "0"
+    },
+    "repoUrl": {
+      "value": ""
+    },
+    "branch": {
+      "value": "master"
+    },
+    "apiSecret": {
+      "value": ""
+    },
+    "apiAiClientToken": {
+      "value": ""
+    },
+    "oauthClientId": {
+      "value": ""
+    },
+    "sessionSecret": {
+      "value": ""
+    },
+    "nodeVersion": {
+      "value": "6.9.5"
+    },
+    "mongodbUri": {
+      "value": ""
+    }
+  }
+}
