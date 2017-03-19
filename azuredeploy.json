@@ -93,6 +93,7 @@
         },
         "properties": {
           "serverFarmId": "[parameters('hostingPlanName')]",
+          "clientAffinityEnabled": false,
           "siteConfig": {
             "appSettings": [
               {
