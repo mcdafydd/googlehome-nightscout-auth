@@ -2,10 +2,6 @@
     "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-      "databaseAccountName": {
-        "type": "string",
-        "defaultValue": "sumpin"
-      },
       "siteName": {
         "type": "string"
       },
@@ -38,7 +34,8 @@
         "type": "string"
       },
       "branch": {
-        "type": "string"
+        "type": "string",
+        "defaultValue": "master"
       },
       "apiSecret": {
         "type": "string",
@@ -61,24 +58,17 @@
       },
       "nodeVersion": {
         "type": "string",
-        "defaultValue": "6.9.4"
+        "defaultValue": "6.9.5"
+      },
+      "mongodbUri": {
+        "type": "string",
+        "defaultValue": "Enter youor mongoDB connection string"
       }
     },
     "variables": {
       "databaseAccountTier": "Standard"
     },
     "resources": [
-      {
-        "apiVersion": "2015-04-08",
-        "type": "Microsoft.DocumentDB/databaseAccounts",
-        "kind": "MongoDB",
-        "name": "[parameters('databaseAccountName')]",
-        "location": "[resourceGroup().location]",
-        "properties": {
-          "name": "[parameters('databaseAccountName')]",
-          "databaseAccountOfferType": "[variables('databaseAccountTier')]"
-        }
-      },
       {
         "apiVersion": "2015-04-01",
         "name": "[parameters('hostingPlanName')]",
@@ -123,15 +113,7 @@
               },
               {
                 "Name": "MONGODB_URI",
-                "Value": "[concat(reference(concat('Microsoft.DocumentDb/databaseAccounts/', parameters('databaseAccountName'))).documentEndpoint,'/webapp')]"
-              },
-              {
-                "Name": "DOCUMENTDB_ENDPOINT",
-                "Value": "[reference(concat('Microsoft.DocumentDb/databaseAccounts/', parameters('databaseAccountName'))).documentEndpoint]"
-              },
-              {
-                "Name": "DOCUMENTDB_PRIMARY_KEY",
-                "Value": "[listKeys(resourceId('Microsoft.DocumentDb/databaseAccounts', parameters('databaseAccountName')), '2015-04-08').primaryMasterKey]"
+                "Value": "[parameters('mongodbUri')]"
               },
               {
                 "Name": "WEBSITE_NODE_DEFAULT_VERSION",
