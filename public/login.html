@@ -28,10 +28,8 @@
         xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
         xhr.onload = function() {
           if (this.responseText === 'oauthUser') {
-            let meta = document.createElement('meta');
-            meta.httpEquiv = 'refresh';
-            meta.content = '0; url="/oauth/acceptScope"';
-            document.getElementsByTagName('head')[0].appendChild(meta);
+            // redirect user to accept oauth scope
+            location.replace('/oauth/acceptScope');
           }
           else {
             if (isValidEmail(this.responseText)) {
