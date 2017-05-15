@@ -22,9 +22,9 @@ process.env['DEBUG'] = 'actions-on-google:*';
 // operations and release them when the connection is complete.
 mongoose.connect(mongouri, function (err) {
   if (err) {
-    console.log ('ERROR connecting to: ' + mongouri + '. ' + err);
+    console.log(`ERROR connecting to mongoDB: ${err}`);
   } else {
-    console.log ('Succeeded connected to: ' + mongouri);
+    console.log('Succeeded connection to mongoDB');
   }
 });
 
@@ -34,9 +34,9 @@ let store = new MongoDBStore(
     uri: mongouri,
     collection: 'cookies'
   });
- 
+
 // Catch errors 
-store.on('error', function(err) {
+store.on('error', function (err) {
   assert.ifError(err);
   assert.ok(false);
 });
@@ -57,7 +57,7 @@ app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: true,
-  cookie: { 
+  cookie: {
     secure: false,
     maxAge: 1000 * 60 * 60 * 24 * 7 // 1 week
   },
@@ -74,38 +74,45 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.get('/oauth/auth', (req, res) => {
   // Verify request parameters are available and valid, don't update session
   // otherwise
-  if (!req.session.userId && req.query !== {}) {
-    if (req.query.hasOwnProperty['state'] && req.query.hasOwnProperty['scope']
-        && req.query.hasOwnProperty['client_id'] 
-        && req.query.hasOwnProperty['redirect_uri']
-        && req.query.hasOwnProperty['response_type']) {
-      console.log('GET /oauth/auth: Saving query parameters to session state');
-      req.session.query = {
-        state:         state,
-        scope:         scope,
-        client_id:     client.id,
-        redirect_uri:  client.redirect_uri,
-        response_type: responseType
-      };
-    }
+  if (Object.prototype.hasOwnProperty.call(req.query, 'state') &&
+    Object.prototype.hasOwnProperty.call(req.query, 'scope') &&
+    Object.prototype.hasOwnProperty.call(req.query, 'client_id') &&
+    Object.prototype.hasOwnProperty.call(req.query, 'redirect_uri') &&
+    Object.prototype.hasOwnProperty.call(req.query, 'response_type')) {
+    console.log('GET /oauth/auth: Saving query parameters to session state');
+    req.session.query = {
+      state: req.query.state,
+      scope: req.query.scope,
+      client_id: req.query.client_id,
+      redirect_uri: req.query.redirect_uri,
+      response_type: req.query.response_type
+    };
     // After successfully validating OAuth2 opening request, handle user
     // authentication
-    console.log('GET /oauth/auth: User not authenticated, redirecting to /public/login.html');
-    res.redirect('/public/login.html');
-    return;
+    if (!req.session.hasOwnProperty('userId')) {
+      console.log('GET /oauth/auth: User not authenticated, redirecting to /public/login.html');
+      res.redirect('/public/login.html');
+      return;
+    }
+    else {
+      console.log('GET /oauth/auth: User already authenticated, redirecting to /oauth/acceptScope');
+      res.redirect('/oauth/acceptScope');
+      return;
+    }
   }
   else {
     res.status(400).send('Bad request');
   };
+  return;
 });
 
 app.get('/oauth/acceptScope', (req, res) => {
   // If user is authenticated and req.query is an empty object, assume that
   // user is returning here to accept scope
-  if (req.session.userId && req.query === {} && req.session.hasOwnProperty['query']) {
+  if (req.session.userId && Object.keys(req.query).length === 0 && req.session.hasOwnProperty('query')) {
     const client = model.getClient(req.session.query.client_id, null);
     client.then((doc) => {
-      if(!doc.name) { res.status(403).send('No such client'); }
+      if (!doc.name) { res.status(403).send('No such client'); }
       // Prompt user based on query scope if present
       res.send(body = `<html><body><h1>Grant access to "${doc.name}"?</h1>`
         + `<p>The application requests access to ${req.session.query.scope}</p>`
@@ -121,12 +128,12 @@ app.get('/oauth/acceptScope', (req, res) => {
 
 app.post('/oauth/auth', (req, res, next) => {
   // Process access/refresh token requests
-  if(!req.session.userId) {
+  if (!req.session.userId) {
     console.log('POST /oauth/auth: User not authenticated, redirecting to /public/login.html');
     res.redirect('/public/login.html');
     return;
   }
-  req.body         = req.session.query;
+  req.body = req.session.query;
   req.body.user_id = req.session.userId;
   delete req.session.query;
   return next();
@@ -134,18 +141,8 @@ app.post('/oauth/auth', (req, res, next) => {
   authenticateHandler: {
     handle: (req, res) => {
       // req.session.userId is only set if validateIdToken() succeeds
-      // make sure that a doc matching userId is found in db
-      const promise = model.getUser(req.body.user_id);
-      promise.then((doc) => {
-        if (doc.userId) { 
-          return req.body.user_id;
-        }
-        return false;
-       })
-      .catch((err) => {
-        console.log(`Error authorizing oauth user: ${err}`);
-        return false;
-      })
+      // do we need to validate userId in db?
+      return req.body.user_id;
     }
   }
 }));
@@ -155,12 +152,12 @@ app.use('/oauth/token', app.oauth.token());
 //app.use('/', app.oauth.authenticate(), function (req, res) {
 //  res.redirect(302, 'https://c5040abb.ngrok.io');
 //});
- 
+
 app.post('/login', (req, res, next) => {
   authnUser(req, res, next);
 }, (req, res) => {
   // If we were sent here from oauth grant page, redirect back
-  if(req.session.hasOwnProperty('query')) {
+  if (req.session.hasOwnProperty('query')) {
     console.log('Redirecting back to grant dialog');
     // String 'oauthUser' will instruct login.html to add meta refresh tag
     // to document to continue the OAuth2 authentication flow
@@ -173,8 +170,8 @@ app.post('/login', (req, res, next) => {
 });
 
 app.get('/logout', (req, res) => {
-    req.session.userId = null;
-    res.redirect('/public/login.html');
+  req.session.userId = null;
+  res.redirect('/public/login.html');
 });
 
 // If user signs in via a browser, assume they want to update their nightscout_uri
@@ -186,13 +183,13 @@ app.get('/private/user', (req, res, next) => {
   };
   const promise = model.getNsUriFromUser(req.session.userId);
   promise.then((doc) => {
-    if (typeof doc.nightscout_uri === undefined ) {
-      throw('User missing nightscout_uri property');
+    if (typeof doc.nightscout_uri === undefined) {
+      throw ('User missing nightscout_uri property');
     }
     console.log(`Found nightscout_uri: ${doc.nightscout_uri}`);
     res.send('<!DOCTYPE html><html><body><form action="/private/update" method="post">'
       + '<h1>Update your Nightscout URL</h1>'
-      + '<p>Inserting a valid URL here will allow your Google Home to answer "Talk ' 
+      + '<p>Inserting a valid URL here will allow your Google Home to answer "Talk '
       + 'to night scout" with data from your Nightscout site.</p>'
       + '<p>Current URL = <b>' + doc.nightscout_uri + '</b></p>'
       + '<input type="url" name="nightscout_uri" '
@@ -201,10 +198,10 @@ app.get('/private/user', (req, res, next) => {
       + '</form><p><a href="/">Return to login page</a></p></body></html>'
     );
   })
-  .catch((e) => {
-    console.log(e);
-    return false;
-  });
+    .catch((e) => {
+      console.log(e);
+      return false;
+    });
 });
 
 // Delete signed in user account and data from database
@@ -219,15 +216,15 @@ app.delete('/user', (req, res, next) => {
     // prevent error response because we're destroying the session at the same
     // time we're building a response
     const userId = req.session.userId;
-    if(!doc) {
-       res.status(400).send(`No users found matching userId ${userId}`);
+    if (!doc) {
+      res.status(400).send(`No users found matching userId ${userId}`);
     }
     res.status(200).send(`Successfully deleted user ${userId}`);
     req.session.destroy();
   })
-  .catch((err) => {
-    res.status(400).send(`Error in update request: ${err}`);
-  });
+    .catch((err) => {
+      res.status(400).send(`Error in update request: ${err}`);
+    });
 });
 
 // Update db with new nightscout_uri
@@ -238,17 +235,17 @@ app.post('/private/update', (req, res) => {
     console.log('User supplied valid URI');
     const dbres = model.setNsUri(req.session.userId, req.body.nightscout_uri);
     dbres.then((doc) => {
-      if(!doc) {
+      if (!doc) {
         res.status(400).send('Could not update nightscout_uri'
           + '<meta http-equiv="refresh" content="3; url=/private/user">');
       }
       res.status(200).send('Successfully updated nightscout_uri'
         + '<meta http-equiv="refresh" content="3; url=/private/user">');
     })
-    .catch((err) => {
-      res.status(400).send(`Error in update request: ${err}`
-        + '<meta http-equiv="refresh" content="3; url=/private/user">');
-    });
+      .catch((err) => {
+        res.status(400).send(`Error in update request: ${err}`
+          + '<meta http-equiv="refresh" content="3; url=/private/user">');
+      });
   } else {
     console.log('User supplied invalid URI');
     res.status(400).send('Invalid URL'
@@ -264,11 +261,11 @@ app.get('/', (req, res) => {
 
 // If client has a valid access_token, redirect google assistant to nightscout_uri
 app.post('/', (req, res, next) => {
- /* Google Home sends POST requests in JSON with a user object containing the 
-  * the user_id and access_token.
-  * Extract the access_token and add it asa bearer token in the request headers
-  * before passing to OAuth middleware
-  */
+  /* Google Home sends POST requests in JSON with a user object containing the 
+   * the user_id and access_token.
+   * Extract the access_token and add it asa bearer token in the request headers
+   * before passing to OAuth middleware
+   */
   var access_token = '';
 
   // Google
@@ -335,9 +332,9 @@ function authnUser(req, res, next) {
     process.env.OAUTH_CLIENT_ID,
     // Or, if multiple clients access the backend:
     //[CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3],
-    function(err, login) {
+    function (err, login) {
       console.log('Google verifyIdToken callback');
-      if(login) {
+      if (login) {
         let payload = login.getPayload();
         let userId = payload['sub'];
         console.log(`setting userId session ${userId}`);
@@ -348,18 +345,23 @@ function authnUser(req, res, next) {
         // If userId doesn't exist, create new user
         const promise = model.getUser(userId);
         promise.then((doc) => {
-          if (!doc.userId) {
-           console.log('no user found');
-           //model.addUser(userId).then(;
+          if (doc === null) {
+            throw (`User ${userId} doesn't exist`);
           }
-          return true; 
-        }).then((user) => {
-          //console.log(`Successfully added userId ${user.userId}`);
-        })
-        .catch((err) => {
-          console.log(`Error adding userId ${userId} - user already exists but still attempting to add? : ${err}`);
-          // This error is OK at the moment, just return next()
+          console.log(`Retrieved record for user ${userId}`);
           return next();
+        }).catch((err) => {
+          // user doesn't exist
+          console.log(`Creating new user for ${userId}`);
+          const promise = model.addUser(userId);
+          promise.then((doc) => {
+            console.log(`Added new user: ${userId}`);
+            return next();
+          })
+            .catch((err) => {
+              console.log(`Error trying to add user ${userId}: ${err}`);
+              return res.status(400).send('Bad request - unable to add new user');
+            });
         });
       }
       else {

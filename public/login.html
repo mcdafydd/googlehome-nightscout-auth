@@ -29,12 +29,14 @@
         xhr.onload = function() {
           if (this.responseText === 'oauthUser') {
             // redirect user to accept oauth scope
+            console.log('OAuth user - redirecting to scope acceptance page');
             location.replace('/oauth/acceptScope');
           }
           else {
             if (isValidEmail(this.responseText)) {
               let text = document.createTextNode(this.responseText);
-              document.getElementById('userName').appendChild(text);
+              let oldtext = document.getElementById('userName').firstChild.nodeValue;
+              document.getElementById('userName').replaceChild(text, oldtext);
               console.log('Signed in as: ' + this.responseText);
             }
           }
@@ -46,6 +48,7 @@
         auth2.signOut().then(function () {
           console.log('User signed out.');
         });
+        document.getElementById('userName').removeChild;
       };
       function deleteUser() {
         var auth2 = gapi.auth2.getAuthInstance();
